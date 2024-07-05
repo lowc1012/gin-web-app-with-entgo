@@ -31,23 +31,23 @@ var (
 )
 
 func New(writer io.Writer, level zapcore.Level, env string, extraOpts ...zap.Option) *zap.SugaredLogger {
-	var config zapcore.EncoderConfig
+	var cfg zapcore.EncoderConfig
 	var encoder zapcore.Encoder
 	opts := make([]zap.Option, 0, len(extraOpts))
 
 	switch env {
 	case "production":
-		config = zap.NewProductionEncoderConfig()
-		config.EncodeTime = zapcore.ISO8601TimeEncoder
-		encoder = zapcore.NewJSONEncoder(config)
+		cfg = zap.NewProductionEncoderConfig()
+		cfg.EncodeTime = zapcore.ISO8601TimeEncoder
+		encoder = zapcore.NewJSONEncoder(cfg)
 	case "development", "mock":
-		config = zap.NewDevelopmentEncoderConfig()
-		config.EncodeLevel = zapcore.CapitalColorLevelEncoder
-		config.EncodeTime = zapcore.ISO8601TimeEncoder
-		encoder = zapcore.NewConsoleEncoder(config)
+		cfg = zap.NewDevelopmentEncoderConfig()
+		cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		cfg.EncodeTime = zapcore.ISO8601TimeEncoder
+		encoder = zapcore.NewConsoleEncoder(cfg)
 		opts = append(opts, zap.WithCaller(true))
 	case "test":
-		config = zapcore.EncoderConfig{
+		cfg = zapcore.EncoderConfig{
 			MessageKey:     "msg",
 			LevelKey:       "level",
 			NameKey:        "logger",
@@ -55,7 +55,7 @@ func New(writer io.Writer, level zapcore.Level, env string, extraOpts ...zap.Opt
 			EncodeTime:     zapcore.ISO8601TimeEncoder,
 			EncodeDuration: zapcore.StringDurationEncoder,
 		}
-		encoder = zapcore.NewJSONEncoder(config)
+		encoder = zapcore.NewJSONEncoder(cfg)
 		opts = append(opts, zap.WithCaller(true))
 	}
 
