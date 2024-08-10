@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,9 +14,24 @@ import (
 )
 
 var rootCmd = &cli.App{
-	Name:   "myApp",
-	Usage:  "Start my golang app",
-	Action: startApp,
+	Name:  "myApp",
+	Usage: "My first golang app",
+	Action: func(c *cli.Context) error {
+		fmt.Printf("This is my first golang app")
+		return nil
+	},
+	Commands: []*cli.Command{
+		{
+			Name:   "start",
+			Usage:  "Start my golang app",
+			Action: startApp,
+		},
+		{
+			Name:   "db:migrate",
+			Usage:  "Execute auto-migrate database",
+			Action: dbMigrateCmd,
+		},
+	},
 }
 
 func startApp(*cli.Context) error {
@@ -48,4 +64,12 @@ func startApp(*cli.Context) error {
 
 	log.Infow("MyApp shutdown gratefully", "event", "shutdown")
 	return nil
+}
+
+func dbMigrateCmd(*cli.Context) error {
+	if err := initDB(); err != nil {
+		return err
+	}
+
+	return dbMigrate()
 }
