@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	entsql "entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/schema"
 	_ "github.com/lib/pq"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/config"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent"
@@ -65,6 +66,78 @@ func MustClient() *ent.Client {
 func AutoMigrate(c *ent.Client) error {
 	ctx := context.Background()
 	return c.Schema.Create(ctx, migrate.WithDropIndex(true), migrate.WithDropColumn(true))
+}
+
+// ResetTables drops all tables and recreates them
+func ResetTables(c *ent.Client) error {
+	if sqlDB == nil {
+		return fmt.Errorf("raw DB instance is nil")
+	}
+	tables, err := schema.CopyTables(migrate.Tables)
+	if err != nil {
+		return err
+	}
+
+	var preStmt, postStmt *sql.Stmt
+	switch dbDriver {
+	case "sqlite", "sqlite3":
+		preStmt, _ = sqlDB.Prepare("PRAGMA foreign_keys=OFF")
+		postStmt, _ = sqlDB.Prepare("PRAGMA foreign_keys=ON")
+	case "mysql", "mariadb":
+		preStmt, _ = sqlDB.Prepare("SET FOREIGN_KEY_CHECKS=0")
+		postStmt, _ = sqlDB.Prepare("SET FOREIGN_KEY_CHECKS=1")
+	}
+	if preStmt != nil {
+		defer preStmt.Close()
+	}
+	if postStmt != nil {
+		defer postStmt.Close()
+	}
+
+	if preStmt != nil {
+		_, err = preStmt.Exec()
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, table := range tables {
+		var stmt *sql.Stmt
+		var err error
+
+		switch dbDriver {
+		case "sqlite", "sqlite3":
+			stmt, err = sqlDB.Prepare(fmt.Sprintf("DROP TABLE IF EXISTS %s", table.Name))
+		case "mysql", "mariadb":
+			stmt, err = sqlDB.Prepare(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", table.Name))
+		case "postgres", "pg", "postgresql", "pgsql":
+			stmt, err = sqlDB.Prepare(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", table.Name))
+		}
+		if err != nil {
+			stmt.Close()
+			return err
+		}
+
+		_, err = stmt.Exec()
+		if err != nil {
+			stmt.Close()
+			return err
+		}
+		stmt.Close()
+	}
+
+	if postStmt != nil {
+		_, err = postStmt.Exec()
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := migrate.Create(context.Background(), c.Schema, tables); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func Ping() error {

@@ -50,12 +50,8 @@ func StartAsync() (server *http.Server, err error) {
 
 	// use goroutine because http.ListenAndServe() generates blocking call
 	go func() {
-		if err := server.ListenAndServe(); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				log.Info("API server closed")
-			} else {
-				log.Errorw("API server got error", "Error", err.Error())
-			}
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Errorw("API server error", "error", err.Error())
 		}
 	}()
 

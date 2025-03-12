@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime/debug"
+	"syscall"
+	"time"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/joho/godotenv"
+	"github.com/lowc1012/gin-web-app-with-entgo/internal/api"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/config"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/log"
 	"github.com/pbnjay/memory"
+	"github.com/urfave/cli/v2"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
@@ -21,7 +27,7 @@ func init() {
 	}
 
 	if err = config.Init(); err != nil {
-		log.Fatalw("Failed to initialize configuration", "error", err.Error())
+		log.Errorw("Failed to initialize configuration", "error", err.Error())
 		os.Exit(1)
 	}
 
@@ -61,8 +67,36 @@ func memByteToStr[T int64 | uint64](v T) string {
 	return fmt.Sprintf("%d MB", uint64(v)/1048576)
 }
 
-func main() {
-	if err := rootCmd.Run(os.Args); err != nil {
-		log.Fatal(err)
+var Start = &cli.Command{
+	Name:   "start",
+	Usage:  "Start MyApp http server",
+	Action: startHTTPServer,
+}
+
+func startHTTPServer(*cli.Context) error {
+	// Create context for graceful shutdown
+	ctx, stop := signal.NotifyContext(context.Background(),
+		syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	apiServer, err := api.StartAsync()
+	if err != nil {
+		log.Errorw("Failed to start MyApp", "error", err.Error())
+		return cli.Exit("Failed to start MyApp", 1)
 	}
+	log.Info("MyApp started successfully")
+
+	// blocks app here
+	<-ctx.Done()
+
+	// Create shutdown context with timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := apiServer.Shutdown(shutdownCtx); err != nil {
+		log.Error("API server shutdown timeout", "error", err.Error())
+		return cli.Exit("API server shutdown timeout", 1)
+	}
+
+	log.Infow("MyApp shutdown gratefully", "event", "shutdown")
+	return nil
 }
