@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
 )
 
@@ -20,36 +21,22 @@ type TodoCreate struct {
 	hooks    []Hook
 }
 
-// SetText sets the "text" field.
-func (tc *TodoCreate) SetText(s string) *TodoCreate {
-	tc.mutation.SetText(s)
+// SetTitle sets the "title" field.
+func (tc *TodoCreate) SetTitle(s string) *TodoCreate {
+	tc.mutation.SetTitle(s)
 	return tc
 }
 
-// SetStatus sets the "status" field.
-func (tc *TodoCreate) SetStatus(t todo.Status) *TodoCreate {
-	tc.mutation.SetStatus(t)
+// SetDescription sets the "description" field.
+func (tc *TodoCreate) SetDescription(s string) *TodoCreate {
+	tc.mutation.SetDescription(s)
 	return tc
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (tc *TodoCreate) SetNillableStatus(t *todo.Status) *TodoCreate {
-	if t != nil {
-		tc.SetStatus(*t)
-	}
-	return tc
-}
-
-// SetPriority sets the "priority" field.
-func (tc *TodoCreate) SetPriority(i int) *TodoCreate {
-	tc.mutation.SetPriority(i)
-	return tc
-}
-
-// SetNillablePriority sets the "priority" field if the given value is not nil.
-func (tc *TodoCreate) SetNillablePriority(i *int) *TodoCreate {
-	if i != nil {
-		tc.SetPriority(*i)
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tc *TodoCreate) SetNillableDescription(s *string) *TodoCreate {
+	if s != nil {
+		tc.SetDescription(*s)
 	}
 	return tc
 }
@@ -80,6 +67,35 @@ func (tc *TodoCreate) SetNillableUpdatedAt(t *time.Time) *TodoCreate {
 		tc.SetUpdatedAt(*t)
 	}
 	return tc
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (tc *TodoCreate) SetDeletedAt(t time.Time) *TodoCreate {
+	tc.mutation.SetDeletedAt(t)
+	return tc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (tc *TodoCreate) SetNillableDeletedAt(t *time.Time) *TodoCreate {
+	if t != nil {
+		tc.SetDeletedAt(*t)
+	}
+	return tc
+}
+
+// AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
+func (tc *TodoCreate) AddTaskIDs(ids ...int) *TodoCreate {
+	tc.mutation.AddTaskIDs(ids...)
+	return tc
+}
+
+// AddTasks adds the "tasks" edges to the Task entity.
+func (tc *TodoCreate) AddTasks(t ...*Task) *TodoCreate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tc.AddTaskIDs(ids...)
 }
 
 // Mutation returns the TodoMutation object of the builder.
@@ -117,14 +133,6 @@ func (tc *TodoCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (tc *TodoCreate) defaults() {
-	if _, ok := tc.mutation.Status(); !ok {
-		v := todo.DefaultStatus
-		tc.mutation.SetStatus(v)
-	}
-	if _, ok := tc.mutation.Priority(); !ok {
-		v := todo.DefaultPriority
-		tc.mutation.SetPriority(v)
-	}
 	if _, ok := tc.mutation.CreatedAt(); !ok {
 		v := todo.DefaultCreatedAt
 		tc.mutation.SetCreatedAt(v)
@@ -137,24 +145,13 @@ func (tc *TodoCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (tc *TodoCreate) check() error {
-	if _, ok := tc.mutation.Text(); !ok {
-		return &ValidationError{Name: "text", err: errors.New(`ent: missing required field "Todo.text"`)}
+	if _, ok := tc.mutation.Title(); !ok {
+		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Todo.title"`)}
 	}
-	if v, ok := tc.mutation.Text(); ok {
-		if err := todo.TextValidator(v); err != nil {
-			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
+	if v, ok := tc.mutation.Title(); ok {
+		if err := todo.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Todo.title": %w`, err)}
 		}
-	}
-	if _, ok := tc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Todo.status"`)}
-	}
-	if v, ok := tc.mutation.Status(); ok {
-		if err := todo.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Todo.status": %w`, err)}
-		}
-	}
-	if _, ok := tc.mutation.Priority(); !ok {
-		return &ValidationError{Name: "priority", err: errors.New(`ent: missing required field "Todo.priority"`)}
 	}
 	if _, ok := tc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Todo.created_at"`)}
@@ -188,17 +185,13 @@ func (tc *TodoCreate) createSpec() (*Todo, *sqlgraph.CreateSpec) {
 		_node = &Todo{config: tc.config}
 		_spec = sqlgraph.NewCreateSpec(todo.Table, sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt))
 	)
-	if value, ok := tc.mutation.Text(); ok {
-		_spec.SetField(todo.FieldText, field.TypeString, value)
-		_node.Text = value
+	if value, ok := tc.mutation.Title(); ok {
+		_spec.SetField(todo.FieldTitle, field.TypeString, value)
+		_node.Title = value
 	}
-	if value, ok := tc.mutation.Status(); ok {
-		_spec.SetField(todo.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
-	}
-	if value, ok := tc.mutation.Priority(); ok {
-		_spec.SetField(todo.FieldPriority, field.TypeInt, value)
-		_node.Priority = value
+	if value, ok := tc.mutation.Description(); ok {
+		_spec.SetField(todo.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if value, ok := tc.mutation.CreatedAt(); ok {
 		_spec.SetField(todo.FieldCreatedAt, field.TypeTime, value)
@@ -207,6 +200,26 @@ func (tc *TodoCreate) createSpec() (*Todo, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.UpdatedAt(); ok {
 		_spec.SetField(todo.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if value, ok := tc.mutation.DeletedAt(); ok {
+		_spec.SetField(todo.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = value
+	}
+	if nodes := tc.mutation.TasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

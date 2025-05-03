@@ -8,14 +8,48 @@ import (
 )
 
 var (
+	// TasksColumns holds the columns for the "tasks" table.
+	TasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "priority", Type: field.TypeInt, Default: 0},
+		{Name: "parent_id", Type: field.TypeInt, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"IN_PROGRESS", "COMPLETED", "NOT_YET"}, Default: "NOT_YET"},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "task_parent", Type: field.TypeInt, Nullable: true},
+		{Name: "todo_id", Type: field.TypeInt, Nullable: true},
+	}
+	// TasksTable holds the schema information for the "tasks" table.
+	TasksTable = &schema.Table{
+		Name:       "tasks",
+		Columns:    TasksColumns,
+		PrimaryKey: []*schema.Column{TasksColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "tasks_tasks_parent",
+				Columns:    []*schema.Column{TasksColumns[9]},
+				RefColumns: []*schema.Column{TasksColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "tasks_todos_tasks",
+				Columns:    []*schema.Column{TasksColumns[10]},
+				RefColumns: []*schema.Column{TodosColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// TodosColumns holds the columns for the "todos" table.
 	TodosColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "text", Type: field.TypeString, Size: 2147483647},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"IN_PROGRESS", "COMPLETED", "NOT_YET"}, Default: "NOT_YET"},
-		{Name: "priority", Type: field.TypeInt, Default: 0},
+		{Name: "title", Type: field.TypeString, Size: 2147483647},
+		{Name: "description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 	}
 	// TodosTable holds the schema information for the "todos" table.
 	TodosTable = &schema.Table{
@@ -25,9 +59,12 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		TasksTable,
 		TodosTable,
 	}
 )
 
 func init() {
+	TasksTable.ForeignKeys[0].RefTable = TasksTable
+	TasksTable.ForeignKeys[1].RefTable = TodosTable
 }

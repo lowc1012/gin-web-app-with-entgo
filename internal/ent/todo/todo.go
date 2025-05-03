@@ -3,10 +3,10 @@
 package todo
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -14,28 +14,37 @@ const (
 	Label = "todo"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldText holds the string denoting the text field in the database.
-	FieldText = "text"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
-	// FieldPriority holds the string denoting the priority field in the database.
-	FieldPriority = "priority"
+	// FieldTitle holds the string denoting the title field in the database.
+	FieldTitle = "title"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
+	// EdgeTasks holds the string denoting the tasks edge name in mutations.
+	EdgeTasks = "tasks"
 	// Table holds the table name of the todo in the database.
 	Table = "todos"
+	// TasksTable is the table that holds the tasks relation/edge.
+	TasksTable = "tasks"
+	// TasksInverseTable is the table name for the Task entity.
+	// It exists in this package in order to avoid circular dependency with the "task" package.
+	TasksInverseTable = "tasks"
+	// TasksColumn is the table column denoting the tasks relation/edge.
+	TasksColumn = "todo_id"
 )
 
 // Columns holds all SQL columns for todo fields.
 var Columns = []string{
 	FieldID,
-	FieldText,
-	FieldStatus,
-	FieldPriority,
+	FieldTitle,
+	FieldDescription,
 	FieldCreatedAt,
 	FieldUpdatedAt,
+	FieldDeletedAt,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -49,42 +58,13 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// TextValidator is a validator for the "text" field. It is called by the builders before save.
-	TextValidator func(string) error
-	// DefaultPriority holds the default value on creation for the "priority" field.
-	DefaultPriority int
+	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	TitleValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt time.Time
 )
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusNotYet is the default value of the Status enum.
-const DefaultStatus = StatusNotYet
-
-// Status values.
-const (
-	StatusInProgress Status = "IN_PROGRESS"
-	StatusCompleted  Status = "COMPLETED"
-	StatusNotYet     Status = "NOT_YET"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusInProgress, StatusCompleted, StatusNotYet:
-		return nil
-	default:
-		return fmt.Errorf("todo: invalid enum value for status field: %q", s)
-	}
-}
 
 // OrderOption defines the ordering options for the Todo queries.
 type OrderOption func(*sql.Selector)
@@ -94,19 +74,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByText orders the results by the text field.
-func ByText(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldText, opts...).ToFunc()
+// ByTitle orders the results by the title field.
+func ByTitle(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTitle, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
-// ByPriority orders the results by the priority field.
-func ByPriority(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPriority, opts...).ToFunc()
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -117,4 +92,30 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByTasksCount orders the results by tasks count.
+func ByTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTasksStep(), opts...)
+	}
+}
+
+// ByTasks orders the results by tasks terms.
+func ByTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, TasksTable, TasksColumn),
+	)
 }

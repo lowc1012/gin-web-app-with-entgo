@@ -17,17 +17,38 @@ type Todo struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Text holds the value of the "text" field.
-	Text string `json:"text,omitempty"`
-	// Status holds the value of the "status" field.
-	Status todo.Status `json:"status,omitempty"`
-	// Priority holds the value of the "priority" field.
-	Priority int `json:"priority,omitempty"`
+	// Title holds the value of the "title" field.
+	Title string `json:"title,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// DeletedAt holds the value of the "deleted_at" field.
+	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the TodoQuery when eager-loading is set.
+	Edges        TodoEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// TodoEdges holds the relations/edges for other nodes in the graph.
+type TodoEdges struct {
+	// Tasks holds the value of the tasks edge.
+	Tasks []*Task `json:"tasks,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// TasksOrErr returns the Tasks value or an error if the edge
+// was not loaded in eager-loading.
+func (e TodoEdges) TasksOrErr() ([]*Task, error) {
+	if e.loadedTypes[0] {
+		return e.Tasks, nil
+	}
+	return nil, &NotLoadedError{edge: "tasks"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -35,11 +56,11 @@ func (*Todo) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case todo.FieldID, todo.FieldPriority:
+		case todo.FieldID:
 			values[i] = new(sql.NullInt64)
-		case todo.FieldText, todo.FieldStatus:
+		case todo.FieldTitle, todo.FieldDescription:
 			values[i] = new(sql.NullString)
-		case todo.FieldCreatedAt, todo.FieldUpdatedAt:
+		case todo.FieldCreatedAt, todo.FieldUpdatedAt, todo.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -62,23 +83,17 @@ func (t *Todo) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			t.ID = int(value.Int64)
-		case todo.FieldText:
+		case todo.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field text", values[i])
+				return fmt.Errorf("unexpected type %T for field title", values[i])
 			} else if value.Valid {
-				t.Text = value.String
+				t.Title = value.String
 			}
-		case todo.FieldStatus:
+		case todo.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				t.Status = todo.Status(value.String)
-			}
-		case todo.FieldPriority:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field priority", values[i])
-			} else if value.Valid {
-				t.Priority = int(value.Int64)
+				t.Description = value.String
 			}
 		case todo.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -92,6 +107,12 @@ func (t *Todo) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				t.UpdatedAt = value.Time
 			}
+		case todo.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				t.DeletedAt = value.Time
+			}
 		default:
 			t.selectValues.Set(columns[i], values[i])
 		}
@@ -103,6 +124,11 @@ func (t *Todo) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (t *Todo) Value(name string) (ent.Value, error) {
 	return t.selectValues.Get(name)
+}
+
+// QueryTasks queries the "tasks" edge of the Todo entity.
+func (t *Todo) QueryTasks() *TaskQuery {
+	return NewTodoClient(t.config).QueryTasks(t)
 }
 
 // Update returns a builder for updating this Todo.
@@ -128,20 +154,20 @@ func (t *Todo) String() string {
 	var builder strings.Builder
 	builder.WriteString("Todo(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", t.ID))
-	builder.WriteString("text=")
-	builder.WriteString(t.Text)
+	builder.WriteString("title=")
+	builder.WriteString(t.Title)
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", t.Status))
-	builder.WriteString(", ")
-	builder.WriteString("priority=")
-	builder.WriteString(fmt.Sprintf("%v", t.Priority))
+	builder.WriteString("description=")
+	builder.WriteString(t.Description)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(t.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(t.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("deleted_at=")
+	builder.WriteString(t.DeletedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

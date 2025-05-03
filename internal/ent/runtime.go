@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/schema"
+	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
 )
 
@@ -13,22 +14,36 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	taskFields := schema.Task{}.Fields()
+	_ = taskFields
+	// taskDescTitle is the schema descriptor for title field.
+	taskDescTitle := taskFields[0].Descriptor()
+	// task.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	task.TitleValidator = taskDescTitle.Validators[0].(func(string) error)
+	// taskDescPriority is the schema descriptor for priority field.
+	taskDescPriority := taskFields[2].Descriptor()
+	// task.DefaultPriority holds the default value on creation for the priority field.
+	task.DefaultPriority = taskDescPriority.Default.(int)
+	// taskDescCreatedAt is the schema descriptor for created_at field.
+	taskDescCreatedAt := taskFields[6].Descriptor()
+	// task.DefaultCreatedAt holds the default value on creation for the created_at field.
+	task.DefaultCreatedAt = taskDescCreatedAt.Default.(time.Time)
+	// taskDescUpdatedAt is the schema descriptor for updated_at field.
+	taskDescUpdatedAt := taskFields[7].Descriptor()
+	// task.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	task.DefaultUpdatedAt = taskDescUpdatedAt.Default.(time.Time)
 	todoFields := schema.Todo{}.Fields()
 	_ = todoFields
-	// todoDescText is the schema descriptor for text field.
-	todoDescText := todoFields[0].Descriptor()
-	// todo.TextValidator is a validator for the "text" field. It is called by the builders before save.
-	todo.TextValidator = todoDescText.Validators[0].(func(string) error)
-	// todoDescPriority is the schema descriptor for priority field.
-	todoDescPriority := todoFields[2].Descriptor()
-	// todo.DefaultPriority holds the default value on creation for the priority field.
-	todo.DefaultPriority = todoDescPriority.Default.(int)
+	// todoDescTitle is the schema descriptor for title field.
+	todoDescTitle := todoFields[0].Descriptor()
+	// todo.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	todo.TitleValidator = todoDescTitle.Validators[0].(func(string) error)
 	// todoDescCreatedAt is the schema descriptor for created_at field.
-	todoDescCreatedAt := todoFields[3].Descriptor()
+	todoDescCreatedAt := todoFields[2].Descriptor()
 	// todo.DefaultCreatedAt holds the default value on creation for the created_at field.
 	todo.DefaultCreatedAt = todoDescCreatedAt.Default.(time.Time)
 	// todoDescUpdatedAt is the schema descriptor for updated_at field.
-	todoDescUpdatedAt := todoFields[4].Descriptor()
+	todoDescUpdatedAt := todoFields[3].Descriptor()
 	// todo.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	todo.DefaultUpdatedAt = todoDescUpdatedAt.Default.(time.Time)
 }

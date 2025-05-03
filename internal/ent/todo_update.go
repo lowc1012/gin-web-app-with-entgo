@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/predicate"
+	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
 )
 
@@ -28,52 +29,37 @@ func (tu *TodoUpdate) Where(ps ...predicate.Todo) *TodoUpdate {
 	return tu
 }
 
-// SetText sets the "text" field.
-func (tu *TodoUpdate) SetText(s string) *TodoUpdate {
-	tu.mutation.SetText(s)
+// SetTitle sets the "title" field.
+func (tu *TodoUpdate) SetTitle(s string) *TodoUpdate {
+	tu.mutation.SetTitle(s)
 	return tu
 }
 
-// SetNillableText sets the "text" field if the given value is not nil.
-func (tu *TodoUpdate) SetNillableText(s *string) *TodoUpdate {
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (tu *TodoUpdate) SetNillableTitle(s *string) *TodoUpdate {
 	if s != nil {
-		tu.SetText(*s)
+		tu.SetTitle(*s)
 	}
 	return tu
 }
 
-// SetStatus sets the "status" field.
-func (tu *TodoUpdate) SetStatus(t todo.Status) *TodoUpdate {
-	tu.mutation.SetStatus(t)
+// SetDescription sets the "description" field.
+func (tu *TodoUpdate) SetDescription(s string) *TodoUpdate {
+	tu.mutation.SetDescription(s)
 	return tu
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (tu *TodoUpdate) SetNillableStatus(t *todo.Status) *TodoUpdate {
-	if t != nil {
-		tu.SetStatus(*t)
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tu *TodoUpdate) SetNillableDescription(s *string) *TodoUpdate {
+	if s != nil {
+		tu.SetDescription(*s)
 	}
 	return tu
 }
 
-// SetPriority sets the "priority" field.
-func (tu *TodoUpdate) SetPriority(i int) *TodoUpdate {
-	tu.mutation.ResetPriority()
-	tu.mutation.SetPriority(i)
-	return tu
-}
-
-// SetNillablePriority sets the "priority" field if the given value is not nil.
-func (tu *TodoUpdate) SetNillablePriority(i *int) *TodoUpdate {
-	if i != nil {
-		tu.SetPriority(*i)
-	}
-	return tu
-}
-
-// AddPriority adds i to the "priority" field.
-func (tu *TodoUpdate) AddPriority(i int) *TodoUpdate {
-	tu.mutation.AddPriority(i)
+// ClearDescription clears the value of the "description" field.
+func (tu *TodoUpdate) ClearDescription() *TodoUpdate {
+	tu.mutation.ClearDescription()
 	return tu
 }
 
@@ -91,9 +77,45 @@ func (tu *TodoUpdate) SetNillableUpdatedAt(t *time.Time) *TodoUpdate {
 	return tu
 }
 
+// AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
+func (tu *TodoUpdate) AddTaskIDs(ids ...int) *TodoUpdate {
+	tu.mutation.AddTaskIDs(ids...)
+	return tu
+}
+
+// AddTasks adds the "tasks" edges to the Task entity.
+func (tu *TodoUpdate) AddTasks(t ...*Task) *TodoUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tu.AddTaskIDs(ids...)
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (tu *TodoUpdate) Mutation() *TodoMutation {
 	return tu.mutation
+}
+
+// ClearTasks clears all "tasks" edges to the Task entity.
+func (tu *TodoUpdate) ClearTasks() *TodoUpdate {
+	tu.mutation.ClearTasks()
+	return tu
+}
+
+// RemoveTaskIDs removes the "tasks" edge to Task entities by IDs.
+func (tu *TodoUpdate) RemoveTaskIDs(ids ...int) *TodoUpdate {
+	tu.mutation.RemoveTaskIDs(ids...)
+	return tu
+}
+
+// RemoveTasks removes "tasks" edges to Task entities.
+func (tu *TodoUpdate) RemoveTasks(t ...*Task) *TodoUpdate {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tu.RemoveTaskIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -125,14 +147,9 @@ func (tu *TodoUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (tu *TodoUpdate) check() error {
-	if v, ok := tu.mutation.Text(); ok {
-		if err := todo.TextValidator(v); err != nil {
-			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
-		}
-	}
-	if v, ok := tu.mutation.Status(); ok {
-		if err := todo.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Todo.status": %w`, err)}
+	if v, ok := tu.mutation.Title(); ok {
+		if err := todo.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Todo.title": %w`, err)}
 		}
 	}
 	return nil
@@ -150,20 +167,65 @@ func (tu *TodoUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := tu.mutation.Text(); ok {
-		_spec.SetField(todo.FieldText, field.TypeString, value)
+	if value, ok := tu.mutation.Title(); ok {
+		_spec.SetField(todo.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := tu.mutation.Status(); ok {
-		_spec.SetField(todo.FieldStatus, field.TypeEnum, value)
+	if value, ok := tu.mutation.Description(); ok {
+		_spec.SetField(todo.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := tu.mutation.Priority(); ok {
-		_spec.SetField(todo.FieldPriority, field.TypeInt, value)
-	}
-	if value, ok := tu.mutation.AddedPriority(); ok {
-		_spec.AddField(todo.FieldPriority, field.TypeInt, value)
+	if tu.mutation.DescriptionCleared() {
+		_spec.ClearField(todo.FieldDescription, field.TypeString)
 	}
 	if value, ok := tu.mutation.UpdatedAt(); ok {
 		_spec.SetField(todo.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if tu.mutation.DeletedAtCleared() {
+		_spec.ClearField(todo.FieldDeletedAt, field.TypeTime)
+	}
+	if tu.mutation.TasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.RemovedTasksIDs(); len(nodes) > 0 && !tu.mutation.TasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tu.mutation.TasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, tu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -185,52 +247,37 @@ type TodoUpdateOne struct {
 	mutation *TodoMutation
 }
 
-// SetText sets the "text" field.
-func (tuo *TodoUpdateOne) SetText(s string) *TodoUpdateOne {
-	tuo.mutation.SetText(s)
+// SetTitle sets the "title" field.
+func (tuo *TodoUpdateOne) SetTitle(s string) *TodoUpdateOne {
+	tuo.mutation.SetTitle(s)
 	return tuo
 }
 
-// SetNillableText sets the "text" field if the given value is not nil.
-func (tuo *TodoUpdateOne) SetNillableText(s *string) *TodoUpdateOne {
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (tuo *TodoUpdateOne) SetNillableTitle(s *string) *TodoUpdateOne {
 	if s != nil {
-		tuo.SetText(*s)
+		tuo.SetTitle(*s)
 	}
 	return tuo
 }
 
-// SetStatus sets the "status" field.
-func (tuo *TodoUpdateOne) SetStatus(t todo.Status) *TodoUpdateOne {
-	tuo.mutation.SetStatus(t)
+// SetDescription sets the "description" field.
+func (tuo *TodoUpdateOne) SetDescription(s string) *TodoUpdateOne {
+	tuo.mutation.SetDescription(s)
 	return tuo
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (tuo *TodoUpdateOne) SetNillableStatus(t *todo.Status) *TodoUpdateOne {
-	if t != nil {
-		tuo.SetStatus(*t)
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tuo *TodoUpdateOne) SetNillableDescription(s *string) *TodoUpdateOne {
+	if s != nil {
+		tuo.SetDescription(*s)
 	}
 	return tuo
 }
 
-// SetPriority sets the "priority" field.
-func (tuo *TodoUpdateOne) SetPriority(i int) *TodoUpdateOne {
-	tuo.mutation.ResetPriority()
-	tuo.mutation.SetPriority(i)
-	return tuo
-}
-
-// SetNillablePriority sets the "priority" field if the given value is not nil.
-func (tuo *TodoUpdateOne) SetNillablePriority(i *int) *TodoUpdateOne {
-	if i != nil {
-		tuo.SetPriority(*i)
-	}
-	return tuo
-}
-
-// AddPriority adds i to the "priority" field.
-func (tuo *TodoUpdateOne) AddPriority(i int) *TodoUpdateOne {
-	tuo.mutation.AddPriority(i)
+// ClearDescription clears the value of the "description" field.
+func (tuo *TodoUpdateOne) ClearDescription() *TodoUpdateOne {
+	tuo.mutation.ClearDescription()
 	return tuo
 }
 
@@ -248,9 +295,45 @@ func (tuo *TodoUpdateOne) SetNillableUpdatedAt(t *time.Time) *TodoUpdateOne {
 	return tuo
 }
 
+// AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
+func (tuo *TodoUpdateOne) AddTaskIDs(ids ...int) *TodoUpdateOne {
+	tuo.mutation.AddTaskIDs(ids...)
+	return tuo
+}
+
+// AddTasks adds the "tasks" edges to the Task entity.
+func (tuo *TodoUpdateOne) AddTasks(t ...*Task) *TodoUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tuo.AddTaskIDs(ids...)
+}
+
 // Mutation returns the TodoMutation object of the builder.
 func (tuo *TodoUpdateOne) Mutation() *TodoMutation {
 	return tuo.mutation
+}
+
+// ClearTasks clears all "tasks" edges to the Task entity.
+func (tuo *TodoUpdateOne) ClearTasks() *TodoUpdateOne {
+	tuo.mutation.ClearTasks()
+	return tuo
+}
+
+// RemoveTaskIDs removes the "tasks" edge to Task entities by IDs.
+func (tuo *TodoUpdateOne) RemoveTaskIDs(ids ...int) *TodoUpdateOne {
+	tuo.mutation.RemoveTaskIDs(ids...)
+	return tuo
+}
+
+// RemoveTasks removes "tasks" edges to Task entities.
+func (tuo *TodoUpdateOne) RemoveTasks(t ...*Task) *TodoUpdateOne {
+	ids := make([]int, len(t))
+	for i := range t {
+		ids[i] = t[i].ID
+	}
+	return tuo.RemoveTaskIDs(ids...)
 }
 
 // Where appends a list predicates to the TodoUpdate builder.
@@ -295,14 +378,9 @@ func (tuo *TodoUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (tuo *TodoUpdateOne) check() error {
-	if v, ok := tuo.mutation.Text(); ok {
-		if err := todo.TextValidator(v); err != nil {
-			return &ValidationError{Name: "text", err: fmt.Errorf(`ent: validator failed for field "Todo.text": %w`, err)}
-		}
-	}
-	if v, ok := tuo.mutation.Status(); ok {
-		if err := todo.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Todo.status": %w`, err)}
+	if v, ok := tuo.mutation.Title(); ok {
+		if err := todo.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Todo.title": %w`, err)}
 		}
 	}
 	return nil
@@ -337,20 +415,65 @@ func (tuo *TodoUpdateOne) sqlSave(ctx context.Context) (_node *Todo, err error) 
 			}
 		}
 	}
-	if value, ok := tuo.mutation.Text(); ok {
-		_spec.SetField(todo.FieldText, field.TypeString, value)
+	if value, ok := tuo.mutation.Title(); ok {
+		_spec.SetField(todo.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := tuo.mutation.Status(); ok {
-		_spec.SetField(todo.FieldStatus, field.TypeEnum, value)
+	if value, ok := tuo.mutation.Description(); ok {
+		_spec.SetField(todo.FieldDescription, field.TypeString, value)
 	}
-	if value, ok := tuo.mutation.Priority(); ok {
-		_spec.SetField(todo.FieldPriority, field.TypeInt, value)
-	}
-	if value, ok := tuo.mutation.AddedPriority(); ok {
-		_spec.AddField(todo.FieldPriority, field.TypeInt, value)
+	if tuo.mutation.DescriptionCleared() {
+		_spec.ClearField(todo.FieldDescription, field.TypeString)
 	}
 	if value, ok := tuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(todo.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if tuo.mutation.DeletedAtCleared() {
+		_spec.ClearField(todo.FieldDeletedAt, field.TypeTime)
+	}
+	if tuo.mutation.TasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.RemovedTasksIDs(); len(nodes) > 0 && !tuo.mutation.TasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := tuo.mutation.TasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   todo.TasksTable,
+			Columns: []string{todo.TasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Todo{config: tuo.config}
 	_spec.Assign = _node.assignValues

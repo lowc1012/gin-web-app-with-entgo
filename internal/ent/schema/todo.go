@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -15,18 +16,17 @@ type Todo struct {
 // Fields of the Todo.
 func (Todo) Fields() []ent.Field {
 	return []ent.Field{
-		field.Text("text").NotEmpty(),
-		field.Enum("status").NamedValues(
-			"InProgress", "IN_PROGRESS",
-			"Completed", "COMPLETED", "NotYet", "NOT_YET").Default("NOT_YET"),
-		field.Int("priority").Default(0),
+		field.Text("title").NotEmpty(),
+		field.Text("description").Optional(),
 		field.Time("created_at").Default(time.Now()).Immutable(),
 		field.Time("updated_at").Default(time.Now()),
+		field.Time("deleted_at").Optional().Immutable(),
 	}
-
 }
 
 // Edges of the Todo.
 func (Todo) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("tasks", Task.Type),
+	}
 }
