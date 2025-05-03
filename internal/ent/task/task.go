@@ -51,11 +51,11 @@ const (
 	// ChildrenTable is the table that holds the children relation/edge.
 	ChildrenTable = "tasks"
 	// ChildrenColumn is the table column denoting the children relation/edge.
-	ChildrenColumn = "task_parent"
+	ChildrenColumn = "parent_id"
 	// ParentTable is the table that holds the parent relation/edge.
 	ParentTable = "tasks"
 	// ParentColumn is the table column denoting the parent relation/edge.
-	ParentColumn = "task_parent"
+	ParentColumn = "parent_id"
 )
 
 // Columns holds all SQL columns for task fields.
@@ -72,21 +72,10 @@ var Columns = []string{
 	FieldDeletedAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "tasks"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"task_parent",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -100,8 +89,8 @@ var (
 	DefaultPriority int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 )
 
 // Status defines the type for the "status" enum field.

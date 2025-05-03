@@ -117,14 +117,6 @@ func (tc *TaskCreate) SetUpdatedAt(t time.Time) *TaskCreate {
 	return tc
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (tc *TaskCreate) SetNillableUpdatedAt(t *time.Time) *TaskCreate {
-	if t != nil {
-		tc.SetUpdatedAt(*t)
-	}
-	return tc
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (tc *TaskCreate) SetDeletedAt(t time.Time) *TaskCreate {
 	tc.mutation.SetDeletedAt(t)
@@ -157,20 +149,6 @@ func (tc *TaskCreate) AddChildren(t ...*Task) *TaskCreate {
 		ids[i] = t[i].ID
 	}
 	return tc.AddChildIDs(ids...)
-}
-
-// SetParentID sets the "parent" edge to the Task entity by ID.
-func (tc *TaskCreate) SetParentID(id int) *TaskCreate {
-	tc.mutation.SetParentID(id)
-	return tc
-}
-
-// SetNillableParentID sets the "parent" edge to the Task entity by ID if the given value is not nil.
-func (tc *TaskCreate) SetNillableParentID(id *int) *TaskCreate {
-	if id != nil {
-		tc = tc.SetParentID(*id)
-	}
-	return tc
 }
 
 // SetParent sets the "parent" edge to the Task entity.
@@ -224,10 +202,6 @@ func (tc *TaskCreate) defaults() {
 	if _, ok := tc.mutation.CreatedAt(); !ok {
 		v := task.DefaultCreatedAt
 		tc.mutation.SetCreatedAt(v)
-	}
-	if _, ok := tc.mutation.UpdatedAt(); !ok {
-		v := task.DefaultUpdatedAt
-		tc.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -290,15 +264,11 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := tc.mutation.Description(); ok {
 		_spec.SetField(task.FieldDescription, field.TypeString, value)
-		_node.Description = value
+		_node.Description = &value
 	}
 	if value, ok := tc.mutation.Priority(); ok {
 		_spec.SetField(task.FieldPriority, field.TypeInt, value)
 		_node.Priority = value
-	}
-	if value, ok := tc.mutation.ParentID(); ok {
-		_spec.SetField(task.FieldParentID, field.TypeInt, value)
-		_node.ParentID = value
 	}
 	if value, ok := tc.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
@@ -314,7 +284,7 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := tc.mutation.DeletedAt(); ok {
 		_spec.SetField(task.FieldDeletedAt, field.TypeTime, value)
-		_node.DeletedAt = value
+		_node.DeletedAt = &value
 	}
 	if nodes := tc.mutation.TodoIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -330,7 +300,7 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TodoID = nodes[0]
+		_node.TodoID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := tc.mutation.ChildrenIDs(); len(nodes) > 0 {
@@ -363,7 +333,7 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.task_parent = &nodes[0]
+		_node.ParentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

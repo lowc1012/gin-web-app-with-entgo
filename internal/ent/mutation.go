@@ -39,8 +39,6 @@ type TaskMutation struct {
 	description     *string
 	priority        *int
 	addpriority     *int
-	parent_id       *int
-	addparent_id    *int
 	status          *task.Status
 	created_at      *time.Time
 	updated_at      *time.Time
@@ -209,7 +207,7 @@ func (m *TaskMutation) Description() (r string, exists bool) {
 // OldDescription returns the old "description" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDescription(ctx context.Context) (v string, err error) {
+func (m *TaskMutation) OldDescription(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
 	}
@@ -314,7 +312,7 @@ func (m *TaskMutation) TodoID() (r int, exists bool) {
 // OldTodoID returns the old "todo_id" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldTodoID(ctx context.Context) (v int, err error) {
+func (m *TaskMutation) OldTodoID(ctx context.Context) (v *int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTodoID is only allowed on UpdateOne operations")
 	}
@@ -348,13 +346,12 @@ func (m *TaskMutation) ResetTodoID() {
 
 // SetParentID sets the "parent_id" field.
 func (m *TaskMutation) SetParentID(i int) {
-	m.parent_id = &i
-	m.addparent_id = nil
+	m.parent = &i
 }
 
 // ParentID returns the value of the "parent_id" field in the mutation.
 func (m *TaskMutation) ParentID() (r int, exists bool) {
-	v := m.parent_id
+	v := m.parent
 	if v == nil {
 		return
 	}
@@ -364,7 +361,7 @@ func (m *TaskMutation) ParentID() (r int, exists bool) {
 // OldParentID returns the old "parent_id" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldParentID(ctx context.Context) (v int, err error) {
+func (m *TaskMutation) OldParentID(ctx context.Context) (v *int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldParentID is only allowed on UpdateOne operations")
 	}
@@ -378,28 +375,9 @@ func (m *TaskMutation) OldParentID(ctx context.Context) (v int, err error) {
 	return oldValue.ParentID, nil
 }
 
-// AddParentID adds i to the "parent_id" field.
-func (m *TaskMutation) AddParentID(i int) {
-	if m.addparent_id != nil {
-		*m.addparent_id += i
-	} else {
-		m.addparent_id = &i
-	}
-}
-
-// AddedParentID returns the value that was added to the "parent_id" field in this mutation.
-func (m *TaskMutation) AddedParentID() (r int, exists bool) {
-	v := m.addparent_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
 // ClearParentID clears the value of the "parent_id" field.
 func (m *TaskMutation) ClearParentID() {
-	m.parent_id = nil
-	m.addparent_id = nil
+	m.parent = nil
 	m.clearedFields[task.FieldParentID] = struct{}{}
 }
 
@@ -411,8 +389,7 @@ func (m *TaskMutation) ParentIDCleared() bool {
 
 // ResetParentID resets all changes to the "parent_id" field.
 func (m *TaskMutation) ResetParentID() {
-	m.parent_id = nil
-	m.addparent_id = nil
+	m.parent = nil
 	delete(m.clearedFields, task.FieldParentID)
 }
 
@@ -541,7 +518,7 @@ func (m *TaskMutation) DeletedAt() (r time.Time, exists bool) {
 // OldDeletedAt returns the old "deleted_at" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+func (m *TaskMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
 	}
@@ -654,27 +631,15 @@ func (m *TaskMutation) ResetChildren() {
 	m.removedchildren = nil
 }
 
-// SetParentID sets the "parent" edge to the Task entity by id.
-func (m *TaskMutation) SetParentID(id int) {
-	m.parent = &id
-}
-
 // ClearParent clears the "parent" edge to the Task entity.
 func (m *TaskMutation) ClearParent() {
 	m.clearedparent = true
+	m.clearedFields[task.FieldParentID] = struct{}{}
 }
 
 // ParentCleared reports if the "parent" edge to the Task entity was cleared.
 func (m *TaskMutation) ParentCleared() bool {
-	return m.clearedparent
-}
-
-// ParentID returns the "parent" edge ID in the mutation.
-func (m *TaskMutation) ParentID() (id int, exists bool) {
-	if m.parent != nil {
-		return *m.parent, true
-	}
-	return
+	return m.ParentIDCleared() || m.clearedparent
 }
 
 // ParentIDs returns the "parent" edge IDs in the mutation.
@@ -740,7 +705,7 @@ func (m *TaskMutation) Fields() []string {
 	if m.todo != nil {
 		fields = append(fields, task.FieldTodoID)
 	}
-	if m.parent_id != nil {
+	if m.parent != nil {
 		fields = append(fields, task.FieldParentID)
 	}
 	if m.status != nil {
@@ -891,9 +856,6 @@ func (m *TaskMutation) AddedFields() []string {
 	if m.addpriority != nil {
 		fields = append(fields, task.FieldPriority)
 	}
-	if m.addparent_id != nil {
-		fields = append(fields, task.FieldParentID)
-	}
 	return fields
 }
 
@@ -904,8 +866,6 @@ func (m *TaskMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case task.FieldPriority:
 		return m.AddedPriority()
-	case task.FieldParentID:
-		return m.AddedParentID()
 	}
 	return nil, false
 }
@@ -921,13 +881,6 @@ func (m *TaskMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddPriority(v)
-		return nil
-	case task.FieldParentID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddParentID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Task numeric field %s", name)
@@ -1426,7 +1379,7 @@ func (m *TodoMutation) DeletedAt() (r time.Time, exists bool) {
 // OldDeletedAt returns the old "deleted_at" field's value of the Todo entity.
 // If the Todo object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+func (m *TodoMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
 	}

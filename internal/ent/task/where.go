@@ -325,26 +325,6 @@ func ParentIDNotIn(vs ...int) predicate.Task {
 	return predicate.Task(sql.FieldNotIn(FieldParentID, vs...))
 }
 
-// ParentIDGT applies the GT predicate on the "parent_id" field.
-func ParentIDGT(v int) predicate.Task {
-	return predicate.Task(sql.FieldGT(FieldParentID, v))
-}
-
-// ParentIDGTE applies the GTE predicate on the "parent_id" field.
-func ParentIDGTE(v int) predicate.Task {
-	return predicate.Task(sql.FieldGTE(FieldParentID, v))
-}
-
-// ParentIDLT applies the LT predicate on the "parent_id" field.
-func ParentIDLT(v int) predicate.Task {
-	return predicate.Task(sql.FieldLT(FieldParentID, v))
-}
-
-// ParentIDLTE applies the LTE predicate on the "parent_id" field.
-func ParentIDLTE(v int) predicate.Task {
-	return predicate.Task(sql.FieldLTE(FieldParentID, v))
-}
-
 // ParentIDIsNil applies the IsNil predicate on the "parent_id" field.
 func ParentIDIsNil() predicate.Task {
 	return predicate.Task(sql.FieldIsNull(FieldParentID))

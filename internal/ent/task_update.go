@@ -106,7 +106,6 @@ func (tu *TaskUpdate) ClearTodoID() *TaskUpdate {
 
 // SetParentID sets the "parent_id" field.
 func (tu *TaskUpdate) SetParentID(i int) *TaskUpdate {
-	tu.mutation.ResetParentID()
 	tu.mutation.SetParentID(i)
 	return tu
 }
@@ -116,12 +115,6 @@ func (tu *TaskUpdate) SetNillableParentID(i *int) *TaskUpdate {
 	if i != nil {
 		tu.SetParentID(*i)
 	}
-	return tu
-}
-
-// AddParentID adds i to the "parent_id" field.
-func (tu *TaskUpdate) AddParentID(i int) *TaskUpdate {
-	tu.mutation.AddParentID(i)
 	return tu
 }
 
@@ -151,11 +144,23 @@ func (tu *TaskUpdate) SetUpdatedAt(t time.Time) *TaskUpdate {
 	return tu
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (tu *TaskUpdate) SetNillableUpdatedAt(t *time.Time) *TaskUpdate {
+// SetDeletedAt sets the "deleted_at" field.
+func (tu *TaskUpdate) SetDeletedAt(t time.Time) *TaskUpdate {
+	tu.mutation.SetDeletedAt(t)
+	return tu
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (tu *TaskUpdate) SetNillableDeletedAt(t *time.Time) *TaskUpdate {
 	if t != nil {
-		tu.SetUpdatedAt(*t)
+		tu.SetDeletedAt(*t)
 	}
+	return tu
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (tu *TaskUpdate) ClearDeletedAt() *TaskUpdate {
+	tu.mutation.ClearDeletedAt()
 	return tu
 }
 
@@ -177,20 +182,6 @@ func (tu *TaskUpdate) AddChildren(t ...*Task) *TaskUpdate {
 		ids[i] = t[i].ID
 	}
 	return tu.AddChildIDs(ids...)
-}
-
-// SetParentID sets the "parent" edge to the Task entity by ID.
-func (tu *TaskUpdate) SetParentID(id int) *TaskUpdate {
-	tu.mutation.SetParentID(id)
-	return tu
-}
-
-// SetNillableParentID sets the "parent" edge to the Task entity by ID if the given value is not nil.
-func (tu *TaskUpdate) SetNillableParentID(id *int) *TaskUpdate {
-	if id != nil {
-		tu = tu.SetParentID(*id)
-	}
-	return tu
 }
 
 // SetParent sets the "parent" edge to the Task entity.
@@ -238,6 +229,7 @@ func (tu *TaskUpdate) ClearParent() *TaskUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (tu *TaskUpdate) Save(ctx context.Context) (int, error) {
+	tu.defaults()
 	return withHooks(ctx, tu.sqlSave, tu.mutation, tu.hooks)
 }
 
@@ -260,6 +252,14 @@ func (tu *TaskUpdate) Exec(ctx context.Context) error {
 func (tu *TaskUpdate) ExecX(ctx context.Context) {
 	if err := tu.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (tu *TaskUpdate) defaults() {
+	if _, ok := tu.mutation.UpdatedAt(); !ok {
+		v := task.UpdateDefaultUpdatedAt()
+		tu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -305,20 +305,14 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := tu.mutation.AddedPriority(); ok {
 		_spec.AddField(task.FieldPriority, field.TypeInt, value)
 	}
-	if value, ok := tu.mutation.ParentID(); ok {
-		_spec.SetField(task.FieldParentID, field.TypeInt, value)
-	}
-	if value, ok := tu.mutation.AddedParentID(); ok {
-		_spec.AddField(task.FieldParentID, field.TypeInt, value)
-	}
-	if tu.mutation.ParentIDCleared() {
-		_spec.ClearField(task.FieldParentID, field.TypeInt)
-	}
 	if value, ok := tu.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := tu.mutation.UpdatedAt(); ok {
 		_spec.SetField(task.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := tu.mutation.DeletedAt(); ok {
+		_spec.SetField(task.FieldDeletedAt, field.TypeTime, value)
 	}
 	if tu.mutation.DeletedAtCleared() {
 		_spec.ClearField(task.FieldDeletedAt, field.TypeTime)
@@ -523,7 +517,6 @@ func (tuo *TaskUpdateOne) ClearTodoID() *TaskUpdateOne {
 
 // SetParentID sets the "parent_id" field.
 func (tuo *TaskUpdateOne) SetParentID(i int) *TaskUpdateOne {
-	tuo.mutation.ResetParentID()
 	tuo.mutation.SetParentID(i)
 	return tuo
 }
@@ -533,12 +526,6 @@ func (tuo *TaskUpdateOne) SetNillableParentID(i *int) *TaskUpdateOne {
 	if i != nil {
 		tuo.SetParentID(*i)
 	}
-	return tuo
-}
-
-// AddParentID adds i to the "parent_id" field.
-func (tuo *TaskUpdateOne) AddParentID(i int) *TaskUpdateOne {
-	tuo.mutation.AddParentID(i)
 	return tuo
 }
 
@@ -568,11 +555,23 @@ func (tuo *TaskUpdateOne) SetUpdatedAt(t time.Time) *TaskUpdateOne {
 	return tuo
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (tuo *TaskUpdateOne) SetNillableUpdatedAt(t *time.Time) *TaskUpdateOne {
+// SetDeletedAt sets the "deleted_at" field.
+func (tuo *TaskUpdateOne) SetDeletedAt(t time.Time) *TaskUpdateOne {
+	tuo.mutation.SetDeletedAt(t)
+	return tuo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (tuo *TaskUpdateOne) SetNillableDeletedAt(t *time.Time) *TaskUpdateOne {
 	if t != nil {
-		tuo.SetUpdatedAt(*t)
+		tuo.SetDeletedAt(*t)
 	}
+	return tuo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (tuo *TaskUpdateOne) ClearDeletedAt() *TaskUpdateOne {
+	tuo.mutation.ClearDeletedAt()
 	return tuo
 }
 
@@ -594,20 +593,6 @@ func (tuo *TaskUpdateOne) AddChildren(t ...*Task) *TaskUpdateOne {
 		ids[i] = t[i].ID
 	}
 	return tuo.AddChildIDs(ids...)
-}
-
-// SetParentID sets the "parent" edge to the Task entity by ID.
-func (tuo *TaskUpdateOne) SetParentID(id int) *TaskUpdateOne {
-	tuo.mutation.SetParentID(id)
-	return tuo
-}
-
-// SetNillableParentID sets the "parent" edge to the Task entity by ID if the given value is not nil.
-func (tuo *TaskUpdateOne) SetNillableParentID(id *int) *TaskUpdateOne {
-	if id != nil {
-		tuo = tuo.SetParentID(*id)
-	}
-	return tuo
 }
 
 // SetParent sets the "parent" edge to the Task entity.
@@ -668,6 +653,7 @@ func (tuo *TaskUpdateOne) Select(field string, fields ...string) *TaskUpdateOne 
 
 // Save executes the query and returns the updated Task entity.
 func (tuo *TaskUpdateOne) Save(ctx context.Context) (*Task, error) {
+	tuo.defaults()
 	return withHooks(ctx, tuo.sqlSave, tuo.mutation, tuo.hooks)
 }
 
@@ -690,6 +676,14 @@ func (tuo *TaskUpdateOne) Exec(ctx context.Context) error {
 func (tuo *TaskUpdateOne) ExecX(ctx context.Context) {
 	if err := tuo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (tuo *TaskUpdateOne) defaults() {
+	if _, ok := tuo.mutation.UpdatedAt(); !ok {
+		v := task.UpdateDefaultUpdatedAt()
+		tuo.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -752,20 +746,14 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	if value, ok := tuo.mutation.AddedPriority(); ok {
 		_spec.AddField(task.FieldPriority, field.TypeInt, value)
 	}
-	if value, ok := tuo.mutation.ParentID(); ok {
-		_spec.SetField(task.FieldParentID, field.TypeInt, value)
-	}
-	if value, ok := tuo.mutation.AddedParentID(); ok {
-		_spec.AddField(task.FieldParentID, field.TypeInt, value)
-	}
-	if tuo.mutation.ParentIDCleared() {
-		_spec.ClearField(task.FieldParentID, field.TypeInt)
-	}
 	if value, ok := tuo.mutation.Status(); ok {
 		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := tuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(task.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := tuo.mutation.DeletedAt(); ok {
+		_spec.SetField(task.FieldDeletedAt, field.TypeTime, value)
 	}
 	if tuo.mutation.DeletedAtCleared() {
 		_spec.ClearField(task.FieldDeletedAt, field.TypeTime)

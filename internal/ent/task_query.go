@@ -26,7 +26,6 @@ type TaskQuery struct {
 	withTodo     *TodoQuery
 	withChildren *TaskQuery
 	withParent   *TaskQuery
-	withFKs      bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -440,7 +439,6 @@ func (tq *TaskQuery) prepareQuery(ctx context.Context) error {
 func (tq *TaskQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Task, error) {
 	var (
 		nodes       = []*Task{}
-		withFKs     = tq.withFKs
 		_spec       = tq.querySpec()
 		loadedTypes = [3]bool{
 			tq.withTodo != nil,
@@ -448,12 +446,6 @@ func (tq *TaskQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Task, e
 			tq.withParent != nil,
 		}
 	)
-	if tq.withParent != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, task.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Task).scanValues(nil, columns)
 	}
@@ -498,7 +490,10 @@ func (tq *TaskQuery) loadTodo(ctx context.Context, query *TodoQuery, nodes []*Ta
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Task)
 	for i := range nodes {
-		fk := nodes[i].TodoID
+		if nodes[i].TodoID == nil {
+			continue
+		}
+		fk := *nodes[i].TodoID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -533,7 +528,9 @@ func (tq *TaskQuery) loadChildren(ctx context.Context, query *TaskQuery, nodes [
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(task.FieldParentID)
+	}
 	query.Where(predicate.Task(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(task.ChildrenColumn), fks...))
 	}))
@@ -542,13 +539,13 @@ func (tq *TaskQuery) loadChildren(ctx context.Context, query *TaskQuery, nodes [
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.task_parent
+		fk := n.ParentID
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "task_parent" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "parent_id" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "task_parent" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "parent_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -558,10 +555,10 @@ func (tq *TaskQuery) loadParent(ctx context.Context, query *TaskQuery, nodes []*
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Task)
 	for i := range nodes {
-		if nodes[i].task_parent == nil {
+		if nodes[i].ParentID == nil {
 			continue
 		}
-		fk := *nodes[i].task_parent
+		fk := *nodes[i].ParentID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -578,7 +575,7 @@ func (tq *TaskQuery) loadParent(ctx context.Context, query *TaskQuery, nodes []*
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "task_parent" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "parent_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -614,6 +611,9 @@ func (tq *TaskQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if tq.withTodo != nil {
 			_spec.Node.AddColumnOnce(task.FieldTodoID)
+		}
+		if tq.withParent != nil {
+			_spec.Node.AddColumnOnce(task.FieldParentID)
 		}
 	}
 	if ps := tq.predicates; len(ps) > 0 {

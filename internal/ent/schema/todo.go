@@ -19,8 +19,8 @@ func (Todo) Fields() []ent.Field {
 		field.Text("title").NotEmpty(),
 		field.Text("description").Optional(),
 		field.Time("created_at").Default(time.Now()).Immutable(),
-		field.Time("updated_at").Default(time.Now()),
-		field.Time("deleted_at").Optional().Immutable(),
+		field.Time("updated_at").UpdateDefault(time.Now()),
+		field.Time("deleted_at").Optional().Nillable(),
 	}
 }
 

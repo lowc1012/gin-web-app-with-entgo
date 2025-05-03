@@ -21,13 +21,13 @@ type Task struct {
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Description holds the value of the "description" field.
-	Description string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty"`
 	// Priority holds the value of the "priority" field.
 	Priority int `json:"priority,omitempty"`
 	// TodoID holds the value of the "todo_id" field.
-	TodoID int `json:"todo_id,omitempty"`
+	TodoID *int `json:"todo_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
-	ParentID int `json:"parent_id,omitempty"`
+	ParentID *int `json:"parent_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status task.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -35,11 +35,10 @@ type Task struct {
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
-	DeletedAt time.Time `json:"deleted_at,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the TaskQuery when eager-loading is set.
 	Edges        TaskEdges `json:"edges"`
-	task_parent  *int
 	selectValues sql.SelectValues
 }
 
@@ -98,8 +97,6 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case task.FieldCreatedAt, task.FieldUpdatedAt, task.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case task.ForeignKeys[0]: // task_parent
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -131,7 +128,8 @@ func (t *Task) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				t.Description = value.String
+				t.Description = new(string)
+				*t.Description = value.String
 			}
 		case task.FieldPriority:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -143,13 +141,15 @@ func (t *Task) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field todo_id", values[i])
 			} else if value.Valid {
-				t.TodoID = int(value.Int64)
+				t.TodoID = new(int)
+				*t.TodoID = int(value.Int64)
 			}
 		case task.FieldParentID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
 			} else if value.Valid {
-				t.ParentID = int(value.Int64)
+				t.ParentID = new(int)
+				*t.ParentID = int(value.Int64)
 			}
 		case task.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -173,14 +173,8 @@ func (t *Task) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				t.DeletedAt = value.Time
-			}
-		case task.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field task_parent", value)
-			} else if value.Valid {
-				t.task_parent = new(int)
-				*t.task_parent = int(value.Int64)
+				t.DeletedAt = new(time.Time)
+				*t.DeletedAt = value.Time
 			}
 		default:
 			t.selectValues.Set(columns[i], values[i])
@@ -236,17 +230,23 @@ func (t *Task) String() string {
 	builder.WriteString("title=")
 	builder.WriteString(t.Title)
 	builder.WriteString(", ")
-	builder.WriteString("description=")
-	builder.WriteString(t.Description)
+	if v := t.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("priority=")
 	builder.WriteString(fmt.Sprintf("%v", t.Priority))
 	builder.WriteString(", ")
-	builder.WriteString("todo_id=")
-	builder.WriteString(fmt.Sprintf("%v", t.TodoID))
+	if v := t.TodoID; v != nil {
+		builder.WriteString("todo_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
-	builder.WriteString("parent_id=")
-	builder.WriteString(fmt.Sprintf("%v", t.ParentID))
+	if v := t.ParentID; v != nil {
+		builder.WriteString("parent_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", t.Status))
@@ -257,8 +257,10 @@ func (t *Task) String() string {
 	builder.WriteString("updated_at=")
 	builder.WriteString(t.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("deleted_at=")
-	builder.WriteString(t.DeletedAt.Format(time.ANSIC))
+	if v := t.DeletedAt; v != nil {
+		builder.WriteString("deleted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

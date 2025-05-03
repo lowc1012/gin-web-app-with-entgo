@@ -17,17 +17,17 @@ type Task struct {
 func (Task) Fields() []ent.Field {
 	return []ent.Field{
 		field.Text("title").NotEmpty(),
-		field.Text("description").Optional(),
+		field.Text("description").Optional().Nillable(),
 		field.Int("priority").Default(0),
-		field.Int("todo_id").Optional(),
-		field.Int("parent_id").Optional(),
+		field.Int("todo_id").Optional().Nillable(),
+		field.Int("parent_id").Optional().Nillable(),
 		field.Enum("status").NamedValues(
 			"InProgress", "IN_PROGRESS",
 			"Completed", "COMPLETED",
 			"NotYet", "NOT_YET").Default("NOT_YET"),
 		field.Time("created_at").Default(time.Now()).Immutable(),
-		field.Time("updated_at").Default(time.Now()),
-		field.Time("deleted_at").Optional().Immutable(),
+		field.Time("updated_at").UpdateDefault(time.Now()),
+		field.Time("deleted_at").Optional().Nillable(),
 	}
 }
 
@@ -35,6 +35,6 @@ func (Task) Fields() []ent.Field {
 func (Task) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("todo", Todo.Type).Ref("tasks").Field("todo_id").Unique(), // O2M or M2O
-		edge.To("parent", Task.Type).Unique().From("children"),
+		edge.To("parent", Task.Type).Unique().Field("parent_id").From("children"),
 	}
 }

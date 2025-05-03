@@ -61,14 +61,6 @@ func (tc *TodoCreate) SetUpdatedAt(t time.Time) *TodoCreate {
 	return tc
 }
 
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (tc *TodoCreate) SetNillableUpdatedAt(t *time.Time) *TodoCreate {
-	if t != nil {
-		tc.SetUpdatedAt(*t)
-	}
-	return tc
-}
-
 // SetDeletedAt sets the "deleted_at" field.
 func (tc *TodoCreate) SetDeletedAt(t time.Time) *TodoCreate {
 	tc.mutation.SetDeletedAt(t)
@@ -137,10 +129,6 @@ func (tc *TodoCreate) defaults() {
 		v := todo.DefaultCreatedAt
 		tc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := tc.mutation.UpdatedAt(); !ok {
-		v := todo.DefaultUpdatedAt
-		tc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -203,7 +191,7 @@ func (tc *TodoCreate) createSpec() (*Todo, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := tc.mutation.DeletedAt(); ok {
 		_spec.SetField(todo.FieldDeletedAt, field.TypeTime, value)
-		_node.DeletedAt = value
+		_node.DeletedAt = &value
 	}
 	if nodes := tc.mutation.TasksIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

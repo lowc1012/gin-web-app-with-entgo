@@ -412,7 +412,6 @@ func (tq *TodoQuery) loadTasks(ctx context.Context, query *TaskQuery, nodes []*T
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(task.FieldTodoID)
 	}
@@ -425,9 +424,12 @@ func (tq *TodoQuery) loadTasks(ctx context.Context, query *TaskQuery, nodes []*T
 	}
 	for _, n := range neighbors {
 		fk := n.TodoID
-		node, ok := nodeids[fk]
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "todo_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "todo_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "todo_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
