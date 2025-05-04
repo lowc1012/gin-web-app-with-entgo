@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
 )
@@ -17,19 +18,19 @@ import (
 type Task struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
+	ID uuid.UUID `json:"id,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// Description holds the value of the "description" field.
-	Description *string `json:"description,omitempty"`
+	Description string `json:"description,omitempty"`
 	// Priority holds the value of the "priority" field.
 	Priority int `json:"priority,omitempty"`
 	// TodoID holds the value of the "todo_id" field.
-	TodoID *int `json:"todo_id,omitempty"`
+	TodoID uuid.UUID `json:"todo_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
-	ParentID *int `json:"parent_id,omitempty"`
+	ParentID uuid.UUID `json:"parent_id,omitempty"`
 	// Status holds the value of the "status" field.
-	Status task.Status `json:"status,omitempty"`
+	Status string `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -91,12 +92,14 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case task.FieldID, task.FieldPriority, task.FieldTodoID, task.FieldParentID:
+		case task.FieldPriority:
 			values[i] = new(sql.NullInt64)
 		case task.FieldTitle, task.FieldDescription, task.FieldStatus:
 			values[i] = new(sql.NullString)
 		case task.FieldCreatedAt, task.FieldUpdatedAt, task.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
+		case task.FieldID, task.FieldTodoID, task.FieldParentID:
+			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -113,11 +116,11 @@ func (t *Task) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case task.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field id", values[i])
+			} else if value != nil {
+				t.ID = *value
 			}
-			t.ID = int(value.Int64)
 		case task.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field title", values[i])
@@ -128,8 +131,7 @@ func (t *Task) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				t.Description = new(string)
-				*t.Description = value.String
+				t.Description = value.String
 			}
 		case task.FieldPriority:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -138,24 +140,22 @@ func (t *Task) assignValues(columns []string, values []any) error {
 				t.Priority = int(value.Int64)
 			}
 		case task.FieldTodoID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field todo_id", values[i])
-			} else if value.Valid {
-				t.TodoID = new(int)
-				*t.TodoID = int(value.Int64)
+			} else if value != nil {
+				t.TodoID = *value
 			}
 		case task.FieldParentID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
-			} else if value.Valid {
-				t.ParentID = new(int)
-				*t.ParentID = int(value.Int64)
+			} else if value != nil {
+				t.ParentID = *value
 			}
 		case task.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				t.Status = task.Status(value.String)
+				t.Status = value.String
 			}
 		case task.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -230,26 +230,20 @@ func (t *Task) String() string {
 	builder.WriteString("title=")
 	builder.WriteString(t.Title)
 	builder.WriteString(", ")
-	if v := t.Description; v != nil {
-		builder.WriteString("description=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("description=")
+	builder.WriteString(t.Description)
 	builder.WriteString(", ")
 	builder.WriteString("priority=")
 	builder.WriteString(fmt.Sprintf("%v", t.Priority))
 	builder.WriteString(", ")
-	if v := t.TodoID; v != nil {
-		builder.WriteString("todo_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
+	builder.WriteString("todo_id=")
+	builder.WriteString(fmt.Sprintf("%v", t.TodoID))
 	builder.WriteString(", ")
-	if v := t.ParentID; v != nil {
-		builder.WriteString("parent_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
+	builder.WriteString("parent_id=")
+	builder.WriteString(fmt.Sprintf("%v", t.ParentID))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", t.Status))
+	builder.WriteString(t.Status)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(t.CreatedAt.Format(time.ANSIC))

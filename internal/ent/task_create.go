@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
 )
@@ -47,67 +48,43 @@ func (tc *TaskCreate) SetPriority(i int) *TaskCreate {
 	return tc
 }
 
-// SetNillablePriority sets the "priority" field if the given value is not nil.
-func (tc *TaskCreate) SetNillablePriority(i *int) *TaskCreate {
-	if i != nil {
-		tc.SetPriority(*i)
-	}
-	return tc
-}
-
 // SetTodoID sets the "todo_id" field.
-func (tc *TaskCreate) SetTodoID(i int) *TaskCreate {
-	tc.mutation.SetTodoID(i)
+func (tc *TaskCreate) SetTodoID(u uuid.UUID) *TaskCreate {
+	tc.mutation.SetTodoID(u)
 	return tc
 }
 
 // SetNillableTodoID sets the "todo_id" field if the given value is not nil.
-func (tc *TaskCreate) SetNillableTodoID(i *int) *TaskCreate {
-	if i != nil {
-		tc.SetTodoID(*i)
+func (tc *TaskCreate) SetNillableTodoID(u *uuid.UUID) *TaskCreate {
+	if u != nil {
+		tc.SetTodoID(*u)
 	}
 	return tc
 }
 
 // SetParentID sets the "parent_id" field.
-func (tc *TaskCreate) SetParentID(i int) *TaskCreate {
-	tc.mutation.SetParentID(i)
+func (tc *TaskCreate) SetParentID(u uuid.UUID) *TaskCreate {
+	tc.mutation.SetParentID(u)
 	return tc
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (tc *TaskCreate) SetNillableParentID(i *int) *TaskCreate {
-	if i != nil {
-		tc.SetParentID(*i)
+func (tc *TaskCreate) SetNillableParentID(u *uuid.UUID) *TaskCreate {
+	if u != nil {
+		tc.SetParentID(*u)
 	}
 	return tc
 }
 
 // SetStatus sets the "status" field.
-func (tc *TaskCreate) SetStatus(t task.Status) *TaskCreate {
-	tc.mutation.SetStatus(t)
-	return tc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (tc *TaskCreate) SetNillableStatus(t *task.Status) *TaskCreate {
-	if t != nil {
-		tc.SetStatus(*t)
-	}
+func (tc *TaskCreate) SetStatus(s string) *TaskCreate {
+	tc.mutation.SetStatus(s)
 	return tc
 }
 
 // SetCreatedAt sets the "created_at" field.
 func (tc *TaskCreate) SetCreatedAt(t time.Time) *TaskCreate {
 	tc.mutation.SetCreatedAt(t)
-	return tc
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (tc *TaskCreate) SetNillableCreatedAt(t *time.Time) *TaskCreate {
-	if t != nil {
-		tc.SetCreatedAt(*t)
-	}
 	return tc
 }
 
@@ -131,20 +108,26 @@ func (tc *TaskCreate) SetNillableDeletedAt(t *time.Time) *TaskCreate {
 	return tc
 }
 
+// SetID sets the "id" field.
+func (tc *TaskCreate) SetID(u uuid.UUID) *TaskCreate {
+	tc.mutation.SetID(u)
+	return tc
+}
+
 // SetTodo sets the "todo" edge to the Todo entity.
 func (tc *TaskCreate) SetTodo(t *Todo) *TaskCreate {
 	return tc.SetTodoID(t.ID)
 }
 
 // AddChildIDs adds the "children" edge to the Task entity by IDs.
-func (tc *TaskCreate) AddChildIDs(ids ...int) *TaskCreate {
+func (tc *TaskCreate) AddChildIDs(ids ...uuid.UUID) *TaskCreate {
 	tc.mutation.AddChildIDs(ids...)
 	return tc
 }
 
 // AddChildren adds the "children" edges to the Task entity.
 func (tc *TaskCreate) AddChildren(t ...*Task) *TaskCreate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -163,7 +146,6 @@ func (tc *TaskCreate) Mutation() *TaskMutation {
 
 // Save creates the Task in the database.
 func (tc *TaskCreate) Save(ctx context.Context) (*Task, error) {
-	tc.defaults()
 	return withHooks(ctx, tc.sqlSave, tc.mutation, tc.hooks)
 }
 
@@ -186,22 +168,6 @@ func (tc *TaskCreate) Exec(ctx context.Context) error {
 func (tc *TaskCreate) ExecX(ctx context.Context) {
 	if err := tc.Exec(ctx); err != nil {
 		panic(err)
-	}
-}
-
-// defaults sets the default values of the builder before save.
-func (tc *TaskCreate) defaults() {
-	if _, ok := tc.mutation.Priority(); !ok {
-		v := task.DefaultPriority
-		tc.mutation.SetPriority(v)
-	}
-	if _, ok := tc.mutation.Status(); !ok {
-		v := task.DefaultStatus
-		tc.mutation.SetStatus(v)
-	}
-	if _, ok := tc.mutation.CreatedAt(); !ok {
-		v := task.DefaultCreatedAt
-		tc.mutation.SetCreatedAt(v)
 	}
 }
 
@@ -246,8 +212,13 @@ func (tc *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	tc.mutation.id = &_node.ID
 	tc.mutation.done = true
 	return _node, nil
@@ -256,22 +227,26 @@ func (tc *TaskCreate) sqlSave(ctx context.Context) (*Task, error) {
 func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Task{config: tc.config}
-		_spec = sqlgraph.NewCreateSpec(task.Table, sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(task.Table, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	)
+	if id, ok := tc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
 	if value, ok := tc.mutation.Title(); ok {
 		_spec.SetField(task.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
 	if value, ok := tc.mutation.Description(); ok {
 		_spec.SetField(task.FieldDescription, field.TypeString, value)
-		_node.Description = &value
+		_node.Description = value
 	}
 	if value, ok := tc.mutation.Priority(); ok {
 		_spec.SetField(task.FieldPriority, field.TypeInt, value)
 		_node.Priority = value
 	}
 	if value, ok := tc.mutation.Status(); ok {
-		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
+		_spec.SetField(task.FieldStatus, field.TypeString, value)
 		_node.Status = value
 	}
 	if value, ok := tc.mutation.CreatedAt(); ok {
@@ -294,13 +269,13 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 			Columns: []string{task.TodoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.TodoID = &nodes[0]
+		_node.TodoID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := tc.mutation.ChildrenIDs(); len(nodes) > 0 {
@@ -311,7 +286,7 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -327,13 +302,13 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 			Columns: []string{task.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.ParentID = &nodes[0]
+		_node.ParentID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -357,7 +332,6 @@ func (tcb *TaskCreateBulk) Save(ctx context.Context) ([]*Task, error) {
 	for i := range tcb.builders {
 		func(i int, root context.Context) {
 			builder := tcb.builders[i]
-			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*TaskMutation)
 				if !ok {
@@ -384,10 +358,6 @@ func (tcb *TaskCreateBulk) Save(ctx context.Context) ([]*Task, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

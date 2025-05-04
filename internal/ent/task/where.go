@@ -7,51 +7,52 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/google/uuid"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/predicate"
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Task {
+func ID(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldID, id))
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Task {
+func IDEQ(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldID, id))
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Task {
+func IDNEQ(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNEQ(FieldID, id))
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Task {
+func IDIn(ids ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldIn(FieldID, ids...))
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Task {
+func IDNotIn(ids ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNotIn(FieldID, ids...))
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Task {
+func IDGT(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldGT(FieldID, id))
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Task {
+func IDGTE(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldGTE(FieldID, id))
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Task {
+func IDLT(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldLT(FieldID, id))
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Task {
+func IDLTE(id uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldLTE(FieldID, id))
 }
 
@@ -71,13 +72,18 @@ func Priority(v int) predicate.Task {
 }
 
 // TodoID applies equality check predicate on the "todo_id" field. It's identical to TodoIDEQ.
-func TodoID(v int) predicate.Task {
+func TodoID(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldTodoID, v))
 }
 
 // ParentID applies equality check predicate on the "parent_id" field. It's identical to ParentIDEQ.
-func ParentID(v int) predicate.Task {
+func ParentID(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldParentID, v))
+}
+
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldStatus, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -276,22 +282,22 @@ func PriorityLTE(v int) predicate.Task {
 }
 
 // TodoIDEQ applies the EQ predicate on the "todo_id" field.
-func TodoIDEQ(v int) predicate.Task {
+func TodoIDEQ(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldTodoID, v))
 }
 
 // TodoIDNEQ applies the NEQ predicate on the "todo_id" field.
-func TodoIDNEQ(v int) predicate.Task {
+func TodoIDNEQ(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNEQ(FieldTodoID, v))
 }
 
 // TodoIDIn applies the In predicate on the "todo_id" field.
-func TodoIDIn(vs ...int) predicate.Task {
+func TodoIDIn(vs ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldIn(FieldTodoID, vs...))
 }
 
 // TodoIDNotIn applies the NotIn predicate on the "todo_id" field.
-func TodoIDNotIn(vs ...int) predicate.Task {
+func TodoIDNotIn(vs ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNotIn(FieldTodoID, vs...))
 }
 
@@ -306,22 +312,22 @@ func TodoIDNotNil() predicate.Task {
 }
 
 // ParentIDEQ applies the EQ predicate on the "parent_id" field.
-func ParentIDEQ(v int) predicate.Task {
+func ParentIDEQ(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldParentID, v))
 }
 
 // ParentIDNEQ applies the NEQ predicate on the "parent_id" field.
-func ParentIDNEQ(v int) predicate.Task {
+func ParentIDNEQ(v uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNEQ(FieldParentID, v))
 }
 
 // ParentIDIn applies the In predicate on the "parent_id" field.
-func ParentIDIn(vs ...int) predicate.Task {
+func ParentIDIn(vs ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldIn(FieldParentID, vs...))
 }
 
 // ParentIDNotIn applies the NotIn predicate on the "parent_id" field.
-func ParentIDNotIn(vs ...int) predicate.Task {
+func ParentIDNotIn(vs ...uuid.UUID) predicate.Task {
 	return predicate.Task(sql.FieldNotIn(FieldParentID, vs...))
 }
 
@@ -336,23 +342,68 @@ func ParentIDNotNil() predicate.Task {
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.Task {
+func StatusEQ(v string) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldStatus, v))
 }
 
 // StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.Task {
+func StatusNEQ(v string) predicate.Task {
 	return predicate.Task(sql.FieldNEQ(FieldStatus, v))
 }
 
 // StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.Task {
+func StatusIn(vs ...string) predicate.Task {
 	return predicate.Task(sql.FieldIn(FieldStatus, vs...))
 }
 
 // StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.Task {
+func StatusNotIn(vs ...string) predicate.Task {
 	return predicate.Task(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.Task {
+	return predicate.Task(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/predicate"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
@@ -34,22 +35,22 @@ type TaskMutation struct {
 	config
 	op              Op
 	typ             string
-	id              *int
+	id              *uuid.UUID
 	title           *string
 	description     *string
 	priority        *int
 	addpriority     *int
-	status          *task.Status
+	status          *string
 	created_at      *time.Time
 	updated_at      *time.Time
 	deleted_at      *time.Time
 	clearedFields   map[string]struct{}
-	todo            *int
+	todo            *uuid.UUID
 	clearedtodo     bool
-	children        map[int]struct{}
-	removedchildren map[int]struct{}
+	children        map[uuid.UUID]struct{}
+	removedchildren map[uuid.UUID]struct{}
 	clearedchildren bool
-	parent          *int
+	parent          *uuid.UUID
 	clearedparent   bool
 	done            bool
 	oldValue        func(context.Context) (*Task, error)
@@ -76,7 +77,7 @@ func newTaskMutation(c config, op Op, opts ...taskOption) *TaskMutation {
 }
 
 // withTaskID sets the ID field of the mutation.
-func withTaskID(id int) taskOption {
+func withTaskID(id uuid.UUID) taskOption {
 	return func(m *TaskMutation) {
 		var (
 			err   error
@@ -126,9 +127,15 @@ func (m TaskMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Task entities.
+func (m *TaskMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *TaskMutation) ID() (id int, exists bool) {
+func (m *TaskMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -139,12 +146,12 @@ func (m *TaskMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *TaskMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *TaskMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -207,7 +214,7 @@ func (m *TaskMutation) Description() (r string, exists bool) {
 // OldDescription returns the old "description" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldDescription(ctx context.Context) (v *string, err error) {
+func (m *TaskMutation) OldDescription(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
 	}
@@ -296,12 +303,12 @@ func (m *TaskMutation) ResetPriority() {
 }
 
 // SetTodoID sets the "todo_id" field.
-func (m *TaskMutation) SetTodoID(i int) {
-	m.todo = &i
+func (m *TaskMutation) SetTodoID(u uuid.UUID) {
+	m.todo = &u
 }
 
 // TodoID returns the value of the "todo_id" field in the mutation.
-func (m *TaskMutation) TodoID() (r int, exists bool) {
+func (m *TaskMutation) TodoID() (r uuid.UUID, exists bool) {
 	v := m.todo
 	if v == nil {
 		return
@@ -312,7 +319,7 @@ func (m *TaskMutation) TodoID() (r int, exists bool) {
 // OldTodoID returns the old "todo_id" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldTodoID(ctx context.Context) (v *int, err error) {
+func (m *TaskMutation) OldTodoID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTodoID is only allowed on UpdateOne operations")
 	}
@@ -345,12 +352,12 @@ func (m *TaskMutation) ResetTodoID() {
 }
 
 // SetParentID sets the "parent_id" field.
-func (m *TaskMutation) SetParentID(i int) {
-	m.parent = &i
+func (m *TaskMutation) SetParentID(u uuid.UUID) {
+	m.parent = &u
 }
 
 // ParentID returns the value of the "parent_id" field in the mutation.
-func (m *TaskMutation) ParentID() (r int, exists bool) {
+func (m *TaskMutation) ParentID() (r uuid.UUID, exists bool) {
 	v := m.parent
 	if v == nil {
 		return
@@ -361,7 +368,7 @@ func (m *TaskMutation) ParentID() (r int, exists bool) {
 // OldParentID returns the old "parent_id" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldParentID(ctx context.Context) (v *int, err error) {
+func (m *TaskMutation) OldParentID(ctx context.Context) (v uuid.UUID, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldParentID is only allowed on UpdateOne operations")
 	}
@@ -394,12 +401,12 @@ func (m *TaskMutation) ResetParentID() {
 }
 
 // SetStatus sets the "status" field.
-func (m *TaskMutation) SetStatus(t task.Status) {
-	m.status = &t
+func (m *TaskMutation) SetStatus(s string) {
+	m.status = &s
 }
 
 // Status returns the value of the "status" field in the mutation.
-func (m *TaskMutation) Status() (r task.Status, exists bool) {
+func (m *TaskMutation) Status() (r string, exists bool) {
 	v := m.status
 	if v == nil {
 		return
@@ -410,7 +417,7 @@ func (m *TaskMutation) Status() (r task.Status, exists bool) {
 // OldStatus returns the old "status" field's value of the Task entity.
 // If the Task object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TaskMutation) OldStatus(ctx context.Context) (v task.Status, err error) {
+func (m *TaskMutation) OldStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
 	}
@@ -564,7 +571,7 @@ func (m *TaskMutation) TodoCleared() bool {
 // TodoIDs returns the "todo" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // TodoID instead. It exists only for internal usage by the builders.
-func (m *TaskMutation) TodoIDs() (ids []int) {
+func (m *TaskMutation) TodoIDs() (ids []uuid.UUID) {
 	if id := m.todo; id != nil {
 		ids = append(ids, *id)
 	}
@@ -578,9 +585,9 @@ func (m *TaskMutation) ResetTodo() {
 }
 
 // AddChildIDs adds the "children" edge to the Task entity by ids.
-func (m *TaskMutation) AddChildIDs(ids ...int) {
+func (m *TaskMutation) AddChildIDs(ids ...uuid.UUID) {
 	if m.children == nil {
-		m.children = make(map[int]struct{})
+		m.children = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.children[ids[i]] = struct{}{}
@@ -598,9 +605,9 @@ func (m *TaskMutation) ChildrenCleared() bool {
 }
 
 // RemoveChildIDs removes the "children" edge to the Task entity by IDs.
-func (m *TaskMutation) RemoveChildIDs(ids ...int) {
+func (m *TaskMutation) RemoveChildIDs(ids ...uuid.UUID) {
 	if m.removedchildren == nil {
-		m.removedchildren = make(map[int]struct{})
+		m.removedchildren = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.children, ids[i])
@@ -609,7 +616,7 @@ func (m *TaskMutation) RemoveChildIDs(ids ...int) {
 }
 
 // RemovedChildren returns the removed IDs of the "children" edge to the Task entity.
-func (m *TaskMutation) RemovedChildrenIDs() (ids []int) {
+func (m *TaskMutation) RemovedChildrenIDs() (ids []uuid.UUID) {
 	for id := range m.removedchildren {
 		ids = append(ids, id)
 	}
@@ -617,7 +624,7 @@ func (m *TaskMutation) RemovedChildrenIDs() (ids []int) {
 }
 
 // ChildrenIDs returns the "children" edge IDs in the mutation.
-func (m *TaskMutation) ChildrenIDs() (ids []int) {
+func (m *TaskMutation) ChildrenIDs() (ids []uuid.UUID) {
 	for id := range m.children {
 		ids = append(ids, id)
 	}
@@ -645,7 +652,7 @@ func (m *TaskMutation) ParentCleared() bool {
 // ParentIDs returns the "parent" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
 // ParentID instead. It exists only for internal usage by the builders.
-func (m *TaskMutation) ParentIDs() (ids []int) {
+func (m *TaskMutation) ParentIDs() (ids []uuid.UUID) {
 	if id := m.parent; id != nil {
 		ids = append(ids, *id)
 	}
@@ -804,21 +811,21 @@ func (m *TaskMutation) SetField(name string, value ent.Value) error {
 		m.SetPriority(v)
 		return nil
 	case task.FieldTodoID:
-		v, ok := value.(int)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTodoID(v)
 		return nil
 	case task.FieldParentID:
-		v, ok := value.(int)
+		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetParentID(v)
 		return nil
 	case task.FieldStatus:
-		v, ok := value.(task.Status)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1092,15 +1099,15 @@ type TodoMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *int
+	id            *uuid.UUID
 	title         *string
 	description   *string
 	created_at    *time.Time
 	updated_at    *time.Time
 	deleted_at    *time.Time
 	clearedFields map[string]struct{}
-	tasks         map[int]struct{}
-	removedtasks  map[int]struct{}
+	tasks         map[uuid.UUID]struct{}
+	removedtasks  map[uuid.UUID]struct{}
 	clearedtasks  bool
 	done          bool
 	oldValue      func(context.Context) (*Todo, error)
@@ -1127,7 +1134,7 @@ func newTodoMutation(c config, op Op, opts ...todoOption) *TodoMutation {
 }
 
 // withTodoID sets the ID field of the mutation.
-func withTodoID(id int) todoOption {
+func withTodoID(id uuid.UUID) todoOption {
 	return func(m *TodoMutation) {
 		var (
 			err   error
@@ -1177,9 +1184,15 @@ func (m TodoMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Todo entities.
+func (m *TodoMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *TodoMutation) ID() (id int, exists bool) {
+func (m *TodoMutation) ID() (id uuid.UUID, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1190,12 +1203,12 @@ func (m *TodoMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *TodoMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *TodoMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []uuid.UUID{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1412,9 +1425,9 @@ func (m *TodoMutation) ResetDeletedAt() {
 }
 
 // AddTaskIDs adds the "tasks" edge to the Task entity by ids.
-func (m *TodoMutation) AddTaskIDs(ids ...int) {
+func (m *TodoMutation) AddTaskIDs(ids ...uuid.UUID) {
 	if m.tasks == nil {
-		m.tasks = make(map[int]struct{})
+		m.tasks = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		m.tasks[ids[i]] = struct{}{}
@@ -1432,9 +1445,9 @@ func (m *TodoMutation) TasksCleared() bool {
 }
 
 // RemoveTaskIDs removes the "tasks" edge to the Task entity by IDs.
-func (m *TodoMutation) RemoveTaskIDs(ids ...int) {
+func (m *TodoMutation) RemoveTaskIDs(ids ...uuid.UUID) {
 	if m.removedtasks == nil {
-		m.removedtasks = make(map[int]struct{})
+		m.removedtasks = make(map[uuid.UUID]struct{})
 	}
 	for i := range ids {
 		delete(m.tasks, ids[i])
@@ -1443,7 +1456,7 @@ func (m *TodoMutation) RemoveTaskIDs(ids ...int) {
 }
 
 // RemovedTasks returns the removed IDs of the "tasks" edge to the Task entity.
-func (m *TodoMutation) RemovedTasksIDs() (ids []int) {
+func (m *TodoMutation) RemovedTasksIDs() (ids []uuid.UUID) {
 	for id := range m.removedtasks {
 		ids = append(ids, id)
 	}
@@ -1451,7 +1464,7 @@ func (m *TodoMutation) RemovedTasksIDs() (ids []int) {
 }
 
 // TasksIDs returns the "tasks" edge IDs in the mutation.
-func (m *TodoMutation) TasksIDs() (ids []int) {
+func (m *TodoMutation) TasksIDs() (ids []uuid.UUID) {
 	for id := range m.tasks {
 		ids = append(ids, id)
 	}

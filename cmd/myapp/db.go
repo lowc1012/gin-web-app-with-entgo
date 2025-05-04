@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/lowc1012/gin-web-app-with-entgo/internal/db"
+	"github.com/lowc1012/gin-web-app-with-entgo/internal/persistence"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/log"
 	"github.com/urfave/cli/v2"
 )
@@ -24,7 +24,7 @@ func dbResetRun(ctx *cli.Context) error {
 	}
 
 	log.Info("Reset and migrate database")
-	err := db.ResetTables(db.MustClient())
+	err := persistence.ResetTables(persistence.MustClient())
 	if err != nil {
 		log.Fatalw("Database reset and migrate failed",
 			"error", err.Error(),
@@ -49,7 +49,7 @@ func dbMigrateRun(*cli.Context) error {
 
 func dbMigrate() error {
 	log.Infow("Migrating database")
-	err := db.AutoMigrate(db.MustClient())
+	err := persistence.AutoMigrate(persistence.MustClient())
 	if err != nil {
 		log.Fatalw("Database migration failed",
 			"error", err.Error(),
@@ -63,7 +63,7 @@ func dbMigrate() error {
 
 func initDB() error {
 	log.Infow("Initialize the database")
-	if err := db.Init(); err != nil {
+	if err := persistence.Init(); err != nil {
 		log.Fatalw("Database initialization failed",
 			"error", err.Error(),
 		)
@@ -71,7 +71,7 @@ func initDB() error {
 	}
 
 	log.Infow("Checking the connection to database")
-	if err := db.Ping(); err != nil {
+	if err := persistence.Ping(); err != nil {
 		log.Fatalw("Database unhealthy", "error", err.Error())
 		return err
 	}

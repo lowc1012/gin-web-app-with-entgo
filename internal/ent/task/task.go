@@ -3,7 +3,6 @@
 package task
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -85,40 +84,11 @@ func ValidColumn(column string) bool {
 var (
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
-	// DefaultPriority holds the default value on creation for the "priority" field.
-	DefaultPriority int
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt time.Time
+	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	StatusValidator func(string) error
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
 )
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// StatusNotYet is the default value of the Status enum.
-const DefaultStatus = StatusNotYet
-
-// Status values.
-const (
-	StatusInProgress Status = "IN_PROGRESS"
-	StatusCompleted  Status = "COMPLETED"
-	StatusNotYet     Status = "NOT_YET"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusInProgress, StatusCompleted, StatusNotYet:
-		return nil
-	default:
-		return fmt.Errorf("task: invalid enum value for status field: %q", s)
-	}
-}
 
 // OrderOption defines the ordering options for the Task queries.
 type OrderOption func(*sql.Selector)

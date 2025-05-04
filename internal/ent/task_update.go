@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/predicate"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/task"
 	"github.com/lowc1012/gin-web-app-with-entgo/internal/ent/todo"
@@ -85,15 +86,15 @@ func (tu *TaskUpdate) AddPriority(i int) *TaskUpdate {
 }
 
 // SetTodoID sets the "todo_id" field.
-func (tu *TaskUpdate) SetTodoID(i int) *TaskUpdate {
-	tu.mutation.SetTodoID(i)
+func (tu *TaskUpdate) SetTodoID(u uuid.UUID) *TaskUpdate {
+	tu.mutation.SetTodoID(u)
 	return tu
 }
 
 // SetNillableTodoID sets the "todo_id" field if the given value is not nil.
-func (tu *TaskUpdate) SetNillableTodoID(i *int) *TaskUpdate {
-	if i != nil {
-		tu.SetTodoID(*i)
+func (tu *TaskUpdate) SetNillableTodoID(u *uuid.UUID) *TaskUpdate {
+	if u != nil {
+		tu.SetTodoID(*u)
 	}
 	return tu
 }
@@ -105,15 +106,15 @@ func (tu *TaskUpdate) ClearTodoID() *TaskUpdate {
 }
 
 // SetParentID sets the "parent_id" field.
-func (tu *TaskUpdate) SetParentID(i int) *TaskUpdate {
-	tu.mutation.SetParentID(i)
+func (tu *TaskUpdate) SetParentID(u uuid.UUID) *TaskUpdate {
+	tu.mutation.SetParentID(u)
 	return tu
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (tu *TaskUpdate) SetNillableParentID(i *int) *TaskUpdate {
-	if i != nil {
-		tu.SetParentID(*i)
+func (tu *TaskUpdate) SetNillableParentID(u *uuid.UUID) *TaskUpdate {
+	if u != nil {
+		tu.SetParentID(*u)
 	}
 	return tu
 }
@@ -125,15 +126,15 @@ func (tu *TaskUpdate) ClearParentID() *TaskUpdate {
 }
 
 // SetStatus sets the "status" field.
-func (tu *TaskUpdate) SetStatus(t task.Status) *TaskUpdate {
-	tu.mutation.SetStatus(t)
+func (tu *TaskUpdate) SetStatus(s string) *TaskUpdate {
+	tu.mutation.SetStatus(s)
 	return tu
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (tu *TaskUpdate) SetNillableStatus(t *task.Status) *TaskUpdate {
-	if t != nil {
-		tu.SetStatus(*t)
+func (tu *TaskUpdate) SetNillableStatus(s *string) *TaskUpdate {
+	if s != nil {
+		tu.SetStatus(*s)
 	}
 	return tu
 }
@@ -170,14 +171,14 @@ func (tu *TaskUpdate) SetTodo(t *Todo) *TaskUpdate {
 }
 
 // AddChildIDs adds the "children" edge to the Task entity by IDs.
-func (tu *TaskUpdate) AddChildIDs(ids ...int) *TaskUpdate {
+func (tu *TaskUpdate) AddChildIDs(ids ...uuid.UUID) *TaskUpdate {
 	tu.mutation.AddChildIDs(ids...)
 	return tu
 }
 
 // AddChildren adds the "children" edges to the Task entity.
 func (tu *TaskUpdate) AddChildren(t ...*Task) *TaskUpdate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -207,14 +208,14 @@ func (tu *TaskUpdate) ClearChildren() *TaskUpdate {
 }
 
 // RemoveChildIDs removes the "children" edge to Task entities by IDs.
-func (tu *TaskUpdate) RemoveChildIDs(ids ...int) *TaskUpdate {
+func (tu *TaskUpdate) RemoveChildIDs(ids ...uuid.UUID) *TaskUpdate {
 	tu.mutation.RemoveChildIDs(ids...)
 	return tu
 }
 
 // RemoveChildren removes "children" edges to Task entities.
 func (tu *TaskUpdate) RemoveChildren(t ...*Task) *TaskUpdate {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -282,7 +283,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := tu.check(); err != nil {
 		return n, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -306,7 +307,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.AddField(task.FieldPriority, field.TypeInt, value)
 	}
 	if value, ok := tu.mutation.Status(); ok {
-		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
+		_spec.SetField(task.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := tu.mutation.UpdatedAt(); ok {
 		_spec.SetField(task.FieldUpdatedAt, field.TypeTime, value)
@@ -325,7 +326,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.TodoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -338,7 +339,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.TodoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -354,7 +355,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -367,7 +368,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -383,7 +384,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -399,7 +400,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -412,7 +413,7 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{task.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -496,15 +497,15 @@ func (tuo *TaskUpdateOne) AddPriority(i int) *TaskUpdateOne {
 }
 
 // SetTodoID sets the "todo_id" field.
-func (tuo *TaskUpdateOne) SetTodoID(i int) *TaskUpdateOne {
-	tuo.mutation.SetTodoID(i)
+func (tuo *TaskUpdateOne) SetTodoID(u uuid.UUID) *TaskUpdateOne {
+	tuo.mutation.SetTodoID(u)
 	return tuo
 }
 
 // SetNillableTodoID sets the "todo_id" field if the given value is not nil.
-func (tuo *TaskUpdateOne) SetNillableTodoID(i *int) *TaskUpdateOne {
-	if i != nil {
-		tuo.SetTodoID(*i)
+func (tuo *TaskUpdateOne) SetNillableTodoID(u *uuid.UUID) *TaskUpdateOne {
+	if u != nil {
+		tuo.SetTodoID(*u)
 	}
 	return tuo
 }
@@ -516,15 +517,15 @@ func (tuo *TaskUpdateOne) ClearTodoID() *TaskUpdateOne {
 }
 
 // SetParentID sets the "parent_id" field.
-func (tuo *TaskUpdateOne) SetParentID(i int) *TaskUpdateOne {
-	tuo.mutation.SetParentID(i)
+func (tuo *TaskUpdateOne) SetParentID(u uuid.UUID) *TaskUpdateOne {
+	tuo.mutation.SetParentID(u)
 	return tuo
 }
 
 // SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (tuo *TaskUpdateOne) SetNillableParentID(i *int) *TaskUpdateOne {
-	if i != nil {
-		tuo.SetParentID(*i)
+func (tuo *TaskUpdateOne) SetNillableParentID(u *uuid.UUID) *TaskUpdateOne {
+	if u != nil {
+		tuo.SetParentID(*u)
 	}
 	return tuo
 }
@@ -536,15 +537,15 @@ func (tuo *TaskUpdateOne) ClearParentID() *TaskUpdateOne {
 }
 
 // SetStatus sets the "status" field.
-func (tuo *TaskUpdateOne) SetStatus(t task.Status) *TaskUpdateOne {
-	tuo.mutation.SetStatus(t)
+func (tuo *TaskUpdateOne) SetStatus(s string) *TaskUpdateOne {
+	tuo.mutation.SetStatus(s)
 	return tuo
 }
 
 // SetNillableStatus sets the "status" field if the given value is not nil.
-func (tuo *TaskUpdateOne) SetNillableStatus(t *task.Status) *TaskUpdateOne {
-	if t != nil {
-		tuo.SetStatus(*t)
+func (tuo *TaskUpdateOne) SetNillableStatus(s *string) *TaskUpdateOne {
+	if s != nil {
+		tuo.SetStatus(*s)
 	}
 	return tuo
 }
@@ -581,14 +582,14 @@ func (tuo *TaskUpdateOne) SetTodo(t *Todo) *TaskUpdateOne {
 }
 
 // AddChildIDs adds the "children" edge to the Task entity by IDs.
-func (tuo *TaskUpdateOne) AddChildIDs(ids ...int) *TaskUpdateOne {
+func (tuo *TaskUpdateOne) AddChildIDs(ids ...uuid.UUID) *TaskUpdateOne {
 	tuo.mutation.AddChildIDs(ids...)
 	return tuo
 }
 
 // AddChildren adds the "children" edges to the Task entity.
 func (tuo *TaskUpdateOne) AddChildren(t ...*Task) *TaskUpdateOne {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -618,14 +619,14 @@ func (tuo *TaskUpdateOne) ClearChildren() *TaskUpdateOne {
 }
 
 // RemoveChildIDs removes the "children" edge to Task entities by IDs.
-func (tuo *TaskUpdateOne) RemoveChildIDs(ids ...int) *TaskUpdateOne {
+func (tuo *TaskUpdateOne) RemoveChildIDs(ids ...uuid.UUID) *TaskUpdateOne {
 	tuo.mutation.RemoveChildIDs(ids...)
 	return tuo
 }
 
 // RemoveChildren removes "children" edges to Task entities.
 func (tuo *TaskUpdateOne) RemoveChildren(t ...*Task) *TaskUpdateOne {
-	ids := make([]int, len(t))
+	ids := make([]uuid.UUID, len(t))
 	for i := range t {
 		ids[i] = t[i].ID
 	}
@@ -706,7 +707,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	if err := tuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Task.id" for update`)}
@@ -747,7 +748,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 		_spec.AddField(task.FieldPriority, field.TypeInt, value)
 	}
 	if value, ok := tuo.mutation.Status(); ok {
-		_spec.SetField(task.FieldStatus, field.TypeEnum, value)
+		_spec.SetField(task.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := tuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(task.FieldUpdatedAt, field.TypeTime, value)
@@ -766,7 +767,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.TodoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -779,7 +780,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.TodoColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(todo.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -795,7 +796,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -808,7 +809,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -824,7 +825,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.ChildrenColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -840,7 +841,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -853,7 +854,7 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 			Columns: []string{task.ParentColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 )
 
 // Todo holds the schema definition for the Todo entity.
@@ -16,10 +17,11 @@ type Todo struct {
 // Fields of the Todo.
 func (Todo) Fields() []ent.Field {
 	return []ent.Field{
+		field.UUID("id", uuid.New()),
 		field.Text("title").NotEmpty(),
 		field.Text("description").Optional(),
-		field.Time("created_at").Default(time.Now()).Immutable(),
-		field.Time("updated_at").UpdateDefault(time.Now()),
+		field.Time("created_at").Immutable(),
+		field.Time("updated_at").UpdateDefault(time.Now),
 		field.Time("deleted_at").Optional().Nillable(),
 	}
 }
